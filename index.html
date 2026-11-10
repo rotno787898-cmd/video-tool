@@ -37,7 +37,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .tab.adm{border-color:#d9a441;color:#ffd27a}
 .ticker{background:linear-gradient(90deg,#3b1d8f,#1d4fd8);overflow:hidden;white-space:nowrap;padding:7px 0;font-weight:700;font-size:14px}
 .tk{display:inline-block;white-space:nowrap;animation:tkm 18s linear infinite;will-change:transform}
-@keyframes tkm{from{transform:translateX(-100%)}to{transform:translateX(100vw)}}
+@keyframes tkm{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
 input[type=radio]{width:auto}
 .ticker.paused .tk{animation-play-state:paused}
 a.bl{display:inline-block;border-radius:10px;padding:9px 13px;font-weight:700;font-size:13px;color:#fff;background:linear-gradient(135deg,var(--ac),var(--ac2));text-decoration:none}
@@ -151,6 +151,7 @@ video{width:100%;border-radius:12px;background:#000;display:block}
           <div><label>সময় (সেকেন্ড)</label><input type="number" id="dur" value="10" min="1" max="60"></div>
           <div><label>কোয়ালিটি</label><select id="q"><option value="0.10">স্ট্যান্ডার্ড</option><option value="0.16" selected>হাই</option><option value="0.25">ম্যাক্স</option></select></div>
         </div>
+        <label style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="autoDl" style="width:auto"> এক্সপোর্ট শেষ হলেই অটো ডাউনলোড হবে</label>
         <div id="usage" class="mut" style="margin-top:8px"></div>
         <button class="full" id="go">⬇ MP4 এক্সপোর্ট করুন</button>
         <div id="bar"><div id="fill"></div></div>
@@ -817,6 +818,7 @@ $('go').onclick = async () => {
     $('vid').src = blobUrl; $('out').classList.remove('hide'); $('fill').style.width = '100%';
     setStatus(`${note}✅ সম্পন্ন! ${W}×${H}, ${fps}fps, ${dur}s, ${(blob.size / 1048576).toFixed(1)} MB`);
     okExport = true;
+    if ($('autoDl').checked) setTimeout(() => { try { $('dl').click(); setStatus($('st').textContent + '\n⬇ ডাউনলোড শুরু হয়েছে (না এলে নিচের ডাউনলোড বাটন চাপুন)'); } catch (e) {} }, 600);
   } catch (e) { setStatus('ত্রুটি: ' + (e.message || e) + '\n(HTML-এ বাইরের ফাইল/SMIL থাকলে "প্রমট বানানোর নিয়ম" ট্যাব দেখুন।)'); }
   if (ex) ex.remove();
   if (wake) try { wake.release(); } catch (e) {}
@@ -825,6 +827,8 @@ $('go').onclick = async () => {
   }
   busy = false; $('ticker').classList.remove('paused'); $('go').disabled = false; t0 = performance.now(); loadPreview();
 };
+try { $('autoDl').checked = localStorage.getItem('vf_autodl') !== '0'; } catch (e) { $('autoDl').checked = true; }
+$('autoDl').onchange = () => { try { localStorage.setItem('vf_autodl', $('autoDl').checked ? '1' : '0'); } catch (e) {} };
 $('dl').onclick = () => { const a = document.createElement('a'); a.href = blobUrl; a.download = outName; a.click(); };
 $('share').onclick = async () => {
   const f = new File([blob], outName, { type: 'video/mp4' });
