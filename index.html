@@ -102,6 +102,7 @@ video{width:100%;border-radius:12px;background:#000;display:block}
       <label>ইমেইল</label><input id="aEmail" type="email" autocomplete="email" inputmode="email">
       <label>পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)</label><input id="aPass" type="password" autocomplete="current-password">
       <button class="full" id="aGo">লগইন করুন</button>
+      <button class="sec full" id="aGoogle" style="margin-top:8px">🔵 Google দিয়ে লগইন</button>
       <div class="row" style="margin-top:8px"><button class="sec sm" id="aForgot">পাসওয়ার্ড ভুলে গেছেন?</button></div>
       <div id="aMsg" class="mut" style="margin-top:8px"></div>
     </div>
@@ -212,7 +213,7 @@ video{width:100%;border-radius:12px;background:#000;display:block}
         <div id="paySummary" class="item" style="margin-top:8px"></div><div id="payList" class="mut">—</div></div>
       <div id="at-users" class="card hide"><div class="row"><h3 class="grow">ইউজার</h3><input id="uSearch" placeholder="ইমেইল খুঁজুন" style="width:45%"></div>
         <select id="uFilter" style="margin-top:8px"><option value="all">সব ইউজার</option><option value="pro">শুধু Pro (সাবস্ক্রাইবার)</option><option value="free">শুধু Free</option><option value="banned">শুধু ব্যান</option></select>
-        <div id="userStats" class="mut" style="margin-top:6px"></div><div id="userList">—</div></div>
+        <div id="userStats" class="mut" style="margin-top:6px"></div><button class="sec sm" id="cleanUsers" style="margin:6px 0">🧹 অব্যবহৃত ফেক ফ্রি অ্যাকাউন্ট মুছুন</button><div id="userList">—</div></div>
       <div id="at-settings" class="card hide"><h3>সাইট সেটিংস</h3>
         <label>সাইটের নাম (ব্র্যান্ড)</label><input id="sBrand">
         <div class="grid2"><div><label>WhatsApp নম্বর</label><input id="sWa"></div><div><label>বিকাশ নম্বর</label><input id="sBkash"></div>
@@ -250,7 +251,7 @@ const CONFIG = {
   }
 };
 const DEFAULTS = {
-  brand: "VidForge Studio", whatsapp: "01965911606", bkash: "01XXXXXXXXX", price: 199, proDays: 30, ticker: "🎉 স্বাগতম! Pro প্ল্যানে 4K MP4 এক্সপোর্ট করুন — মাত্র ৳199 / মাসে", tools: [], plans: [{ name: "Pro ১ মাস", price: 199, days: 30, features: "60fps পর্যন্ত, ম্যাক্স কোয়ালিটি" }], free1080Limit: 20, notice: "",
+  brand: "VidForge Studio", whatsapp: "01965911606", bkash: "01XXXXXXXXX", price: 199, proDays: 30, ticker: "🎉 স্বাগতম! Pro প্ল্যানে 4K MP4 এক্সপোর্ট করুন — মাত্র ৳199 / মাসে", tools: [], plans: [{ name: "Pro ১ মাস", price: 199, days: 30, features: "60fps পর্যন্ত, ম্যাক্স কোয়ালিটি" }], free1080Limit: 3, notice: "",
   guide: "১) AI-কে (ChatGPT, Gemini, Claude ইত্যাদি) নিচের প্রম্পট টেমপ্লেট দিন।\n২) THEME অংশে আপনার আইডিয়া লিখুন (রঙ, বিষয়, মুড)।\n৩) AI যে HTML কোড দেবে সেটা পুরোটা কপি করে টুলে পেস্ট করুন।\n৪) প্রিভিউ ঠিক থাকলে সাইজ ও fps বেছে MP4 এক্সপোর্ট করুন।\n\nগুরুত্বপূর্ণ: অ্যানিমেশন CSS @keyframes বা requestAnimationFrame দিয়ে হতে হবে। বাইরের ছবি, ফন্ট বা SMIL (<animate>) ব্যবহার করা যাবে না।",
   promptTemplate: "Create ONE self-contained HTML file for a seamless looping animation that will be rendered to a 10-second video (3840x2160, 30fps).\n\nRULES (follow strictly):\n1. Design on a 1920x1080 stage. Use: html,body{margin:0;width:100%;height:100%;overflow:hidden}. Fill the whole screen.\n2. The loop is exactly 10 seconds and the last frame must flow seamlessly into the first.\n3. Animate ONLY with CSS @keyframes (animation-duration 10s, 5s, 2s or 1s, iteration-count: infinite, linear or ease-in-out) OR with requestAnimationFrame(ts) where all motion is a pure function of ts (e.g. phase = (ts % 10000) / 10000 * 2π, and use integer multiples of the phase so it loops). Never use video, audio, user input or real clocks.\n4. No SMIL (<animate>), no external files, images or web fonts. Inline everything and use system fonts. Inline SVG, CSS shapes and <canvas> are fine.\n5. Style: clean flat vector graphics (EPS / Adobe Stock style), smooth gradients, no photos, no logos, no copyrighted characters, no text unless I ask.\n6. No buttons, controls or UI. Output only the HTML code, nothing else.\n\nTHEME: [describe your idea here]"
 };
@@ -288,12 +289,12 @@ function makeDemo() {
       if (pass.length < 6) throw { code: 'auth/weak-password' };
       const uid = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
       us[email] = { pass, uid, name }; s('demo_accounts', us);
-      const u = { uid, email, name }; s('demo_session', u); cb(u);
+      const u = { uid, email, name, verified: true }; s('demo_session', u); cb(u);
     },
     async signIn(email, pass) {
       const us = g('demo_accounts', {}); email = email.toLowerCase(); const a = us[email];
       if (!a || a.pass !== pass) throw { code: 'auth/invalid-credential' };
-      const u = { uid: a.uid, email, name: a.name }; s('demo_session', u); cb(u);
+      const u = { uid: a.uid, email, name: a.name, verified: true }; s('demo_session', u); cb(u);
     },
     async signOut() { localStorage.removeItem('demo_session'); cb(null); },
     async resetPassword() {},
@@ -319,6 +320,8 @@ function makeDemo() {
       const us = g('demo_users', {}); us[uid].plan = 'pro'; us[uid].proUntil = proUntil; s('demo_users', us);
     },
     async rejectPayment(id) { const ps = g('demo_pays', {}); ps[id].status = 'rejected'; ps[id].reviewedAt = Date.now(); s('demo_pays', ps); },
+    async deleteUsers(ids) { const us = g('demo_users', {}); ids.forEach(i => delete us[i]); s('demo_users', us); },
+    async sendVerify() {}, async reloadUser() { return true; }, async googleSignIn() { throw { code: 'auth/operation-not-allowed' }; },
     async listUsers() { const us = g('demo_users', {}); return Object.keys(us).map(k => ({ uid: k, ...us[k] })); },
     async updateUser(uid, patch) { const us = g('demo_users', {}); Object.assign(us[uid], patch); s('demo_users', us); }
   };
@@ -331,8 +334,12 @@ async function makeFirebase(cfg) {
   const rows = s => s.docs.map(d => ({ id: d.id, uid: d.data().uid || d.id, ...d.data() }));
   return {
     mode: 'firebase',
-    onAuth(cb) { A.onAuthStateChanged(auth, u => cb(u ? { uid: u.uid, email: u.email, name: u.displayName || '' } : null)); },
-    async signUp(email, pass, name) { const c = await A.createUserWithEmailAndPassword(auth, email, pass); if (name) { try { await A.updateProfile(c.user, { displayName: name }); } catch (e) {} } },
+    onAuth(cb) { A.onAuthStateChanged(auth, u => cb(u ? { uid: u.uid, email: u.email, name: u.displayName || '', verified: !!u.emailVerified } : null)); },
+    async sendVerify() { if (auth.currentUser) await A.sendEmailVerification(auth.currentUser); },
+    async reloadUser() { if (!auth.currentUser) return false; await auth.currentUser.reload(); return !!auth.currentUser.emailVerified; },
+    async googleSignIn() { await A.signInWithPopup(auth, new A.GoogleAuthProvider()); },
+    async deleteUsers(ids) { for (let i = 0; i < ids.length; i += 400) { const b = F.writeBatch(db); ids.slice(i, i + 400).forEach(id => b.delete(U(id))); await b.commit(); } },
+    async signUp(email, pass, name) { const c = await A.createUserWithEmailAndPassword(auth, email, pass); try { await A.sendEmailVerification(c.user); } catch (e) {} if (name) { try { await A.updateProfile(c.user, { displayName: name }); } catch (e) {} } },
     async signIn(email, pass) { await A.signInWithEmailAndPassword(auth, email, pass); },
     signOut() { return A.signOut(auth); },
     resetPassword(email) { return A.sendPasswordResetEmail(auth, email); },
@@ -362,10 +369,13 @@ let B;
 const isAdmin = () => !!(S.user && (S.user.uid === CONFIG.ADMIN_UID || CONFIG.ADMIN_EMAILS.some(e => e.toLowerCase() === (S.user.email || '').toLowerCase())));
 const effPlan = () => isAdmin() ? 'pro' : (S.doc && S.doc.plan === 'pro' && S.doc.proUntil > Date.now()) ? 'pro' : 'free';
 const tierOf = (W, H) => { const m = Math.min(W, H); return m <= 720 ? 'hd' : m <= 1080 ? 'fhd' : 'pro'; };
+const devUsed = () => { try { return +localStorage.getItem('vf_dev') || 0; } catch (e) { return 0; } };
+const devBump = () => { try { localStorage.setItem('vf_dev', String(devUsed() + 1)); } catch (e) {} };
 function gate(W, H) {
   const tier = tierOf(W, H), plan = effPlan(), lim = +S.settings.free1080Limit || 0, used = S.doc.used1080 || 0;
   if (plan === 'pro' || tier === 'hd') return { ok: true, tier };
-  if (used >= lim) return { ok: false, tier, why: `আপনার ফ্রি ট্রায়ালের ${lim}টি Pro ভিডিও শেষ হয়ে গেছে। এখন ফ্রিতে শুধু 720p চলবে। 1080p, 1440p ও 4K-র জন্য Pro নিন।` };
+  if (S.user && !S.user.verified) return { ok: false, tier, why: 'ফ্রি ট্রায়াল (1080p/4K) পেতে আগে আপনার ইমেইল ভেরিফাই করুন। আপনার ইমেইলে পাঠানো লিংকে ক্লিক করুন (স্প্যাম ফোল্ডারও দেখুন), তারপর উপরের "✅ ভেরিফাই করেছি" বাটন চাপুন। 720p ভেরিফাই ছাড়াই ফ্রি।' };
+  if (used >= lim || devUsed() >= lim) return { ok: false, tier, why: `আপনার ফ্রি ট্রায়ালের ${lim}টি Pro ভিডিও শেষ হয়ে গেছে। এখন ফ্রিতে শুধু 720p চলবে। 1080p, 1440p ও 4K-র জন্য Pro নিন।` };
   return { ok: true, tier };
 }
 
@@ -402,6 +412,12 @@ function renderHeader() {
   renderUsage();
 }
 function renderUsage() {
+  let vb = $('verifyBar');
+  if (!vb) { vb = document.createElement('div'); vb.id = 'verifyBar'; vb.className = 'card'; vb.style.cssText = 'border:1px solid #f59e0b'; $('usage').parentNode.insertBefore(vb, $('usage')); }
+  const needV = !!(S.user && !S.user.verified && effPlan() !== 'pro');
+  vb.classList.toggle('hide', !needV);
+  if (needV) vb.innerHTML = '📧 <b>ইমেইল ভেরিফাই করুন</b> — ফ্রি ট্রায়াল (1080p/4K) পেতে ইমেইলে পাঠানো লিংকে ক্লিক করুন। (720p এখনই ফ্রি)<div class="row" style="margin-top:8px"><button class="ok sm" id="vDone">✅ ভেরিফাই করেছি</button><button class="sec sm" id="vResend">আবার লিংক পাঠান</button></div><div id="vMsg" class="mut"></div>';
+
   const p = effPlan(), lim = +S.settings.free1080Limit || 0;
   $('usage').innerHTML = p === 'pro'
     ? (isAdmin() ? '🛠 অ্যাডমিন: সব সাইজ আনলিমিটেড' : `✅ Pro: সব সাইজ আনলিমিটেড (মেয়াদ ${fd(S.doc.proUntil)} পর্যন্ত)`)
@@ -452,6 +468,18 @@ $('aForgot').onclick = async () => {
   try { await B.resetPassword(email); $('aMsg').textContent = '✅ পাসওয়ার্ড রিসেট লিংক ইমেইলে পাঠানো হয়েছে।'; } catch (e) { $('aMsg').textContent = '❌ ' + errMsg(e); }
 };
 $('logout').onclick = () => B.signOut();
+$('aGoogle').onclick = async () => { try { await B.googleSignIn(); } catch (e) { $('aMsg').textContent = '❌ ' + (e.code === 'auth/operation-not-allowed' ? 'Google লগইন এখনো চালু নয়।' : e.code === 'auth/popup-closed-by-user' ? 'বাতিল হয়েছে।' : errMsg(e)); } };
+document.addEventListener('click', async e => {
+  const t = e.target; if (!t || !t.id) return;
+  if (t.id === 'vResend') { try { await B.sendVerify(); $('vMsg').textContent = '✅ লিংক পাঠানো হয়েছে। ইনবক্স/স্প্যাম দেখুন।'; } catch (er) { $('vMsg').textContent = errMsg(er); } }
+  if (t.id === 'vDone') { try { if (await B.reloadUser()) { S.user.verified = true; renderHeader(); toast('✅ ভেরিফাই সম্পন্ন'); } else $('vMsg').textContent = '❌ এখনো ভেরিফাই হয়নি। ইমেইলের লিংকে ক্লিক করুন।'; } catch (er) { $('vMsg').textContent = errMsg(er); } }
+  if (t.id === 'cleanUsers') {
+    const now = Date.now(), ids = allUsers.filter(u => u.plan !== 'pro' && !(u.used1080 > 0) && !u.banned && now - (u.createdAt || 0) > 3 * DAY && u.uid !== S.user.uid).map(u => u.uid);
+    if (!ids.length) return toast('মোছার মতো কেউ নেই');
+    if (!confirm(ids.length + 'টি ফ্রি অ্যাকাউন্ট (৩ দিনের পুরনো, ট্রায়াল ব্যবহার করেনি) তালিকা থেকে মুছবেন? Pro/ব্যান করা ইউজার মুছবে না।')) return;
+    try { await B.deleteUsers(ids); toast('✅ ' + ids.length + 'টি মোছা হয়েছে'); await loadUsers(); } catch (er) { toast(errMsg(er)); }
+  }
+});
 let banFlag = false;
 async function onAuth(u) {
   S.user = u;
@@ -795,11 +823,13 @@ $('go').onclick = async () => {
     let encErr = null;
     const enc = new VideoEncoder({ output: (ch, meta) => muxer.addVideoChunk(ch, meta), error: e => { encErr = e; } });
     enc.configure(cfg);
+    const wm = effPlan() !== 'pro' && gt.tier !== 'hd';
     const N = dur * fps, tStart = performance.now();
     for (let i = 0; i < N; i++) {
       if (encErr) throw encErr;
       win.__vcAdvance(i * 1000 / fps);
       await capture(doc, win, ctx, W, H, lw, lh);
+      if (wm) { ctx.save(); const fs = Math.round(H * 0.035); ctx.font = '700 ' + fs + 'px sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.globalAlpha = 0.55; ctx.lineWidth = fs / 8; ctx.strokeStyle = '#000'; ctx.fillStyle = '#fff'; const tx = (S.settings.brand || 'Trial') + ' • Free Trial'; ctx.strokeText(tx, W - fs, H - fs); ctx.fillText(tx, W - fs, H - fs); ctx.restore(); }
       const fr = new VideoFrame(cv, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) });
       enc.encode(fr, { keyFrame: i % fps === 0 }); fr.close();
       while (enc.encodeQueueSize > 4) await new Promise(r => setTimeout(r, 5));
@@ -823,7 +853,7 @@ $('go').onclick = async () => {
   if (ex) ex.remove();
   if (wake) try { wake.release(); } catch (e) {}
   if (okExport && gt.tier !== 'hd' && effPlan() !== 'pro') {
-    try { S.doc.used1080 = (S.doc.used1080 || 0) + 1; await B.bumpUsage(S.user.uid, S.doc.used1080); renderUsage(); } catch (e) {}
+    try { S.doc.used1080 = (S.doc.used1080 || 0) + 1; devBump(); await B.bumpUsage(S.user.uid, S.doc.used1080); renderUsage(); } catch (e) {}
   }
   busy = false; $('ticker').classList.remove('paused'); $('go').disabled = false; t0 = performance.now(); loadPreview();
 };
